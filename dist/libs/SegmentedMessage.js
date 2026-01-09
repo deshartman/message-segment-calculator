@@ -308,7 +308,8 @@ var SegmentedMessage = /** @class */ (function () {
      */
     SegmentedMessage.prototype._detectLineBreakStyle = function (message) {
         var hasWindowsStyle = message.includes('\r\n');
-        var HasUnixStyle = message.includes('\n');
+        // Check for standalone \n by removing all \r\n first
+        var HasUnixStyle = message.replace(/\r\n/g, '').includes('\n');
         var mixedStyle = hasWindowsStyle && HasUnixStyle;
         var noBreakLine = !hasWindowsStyle && !HasUnixStyle;
         if (noBreakLine) {
@@ -327,8 +328,21 @@ var SegmentedMessage = /** @class */ (function () {
      */
     SegmentedMessage.prototype._checkForWarnings = function () {
         var warnings = [];
-        if (this.lineBreakStyle) {
-            warnings.push('The message has line breaks, the web page utility only supports LF style. If you insert a CRLF it will be converted to LF.');
+        switch (this.lineBreakStyle) {
+            case 'CRLF':
+                warnings.push('This message contains CRLF (Windows-style) line breaks. Each CRLF is counted as 2 characters (\\r and \\n separately), which increases segment count. ' +
+                    'Consider using LF (Unix-style) line breaks instead to reduce character usage by half for each line break.');
+                break;
+            case 'LF+CRLF':
+                warnings.push('This message contains mixed line break styles (both LF and CRLF). Each CRLF is counted as 2 characters (\\r and \\n separately), while LF counts as 1 character. ' +
+                    'This inconsistency increases segment count. Standardize on LF (Unix-style) line breaks for optimal character usage.');
+                break;
+            case 'LF':
+                // No warning - LF is optimal
+                break;
+            case undefined:
+                // No line breaks - no warning
+                break;
         }
         return warnings;
     };

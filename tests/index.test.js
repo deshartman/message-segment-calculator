@@ -237,3 +237,84 @@ describe('Line break styles tests', () => {
     expect(segmentedMessage.segmentsCount).toBe(2);
   });
 });
+
+describe('Line Break Detection Tests', () => {
+  test('Pure CRLF detected correctly (not as mixed)', () => {
+    const testMessage = 'Hello\r\nWorld\r\n';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.lineBreakStyle).toBe('CRLF'); // NOT 'LF+CRLF'
+  });
+
+  test('Pure LF detected correctly', () => {
+    const testMessage = 'Hello\nWorld\n';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.lineBreakStyle).toBe('LF');
+  });
+
+  test('Mixed LF and CRLF detected correctly', () => {
+    const testMessage = 'Hello\r\nWorld\nTest';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.lineBreakStyle).toBe('LF+CRLF');
+  });
+
+  test('No line breaks detected correctly', () => {
+    const testMessage = 'Hello World';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.lineBreakStyle).toBeUndefined();
+  });
+});
+
+describe('CRLF Warning Tests', () => {
+  test('CRLF line breaks generate appropriate warning', () => {
+    const testMessage = 'Hello\r\nWorld\r\n';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.warnings.length).toBe(1);
+    expect(segmentedMessage.warnings[0]).toContain('CRLF');
+    expect(segmentedMessage.warnings[0]).toContain('2 characters');
+    expect(segmentedMessage.warnings[0]).not.toContain('converted to LF');
+  });
+
+  test('LF line breaks generate no warning', () => {
+    const testMessage = 'Hello\nWorld\n';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.warnings.length).toBe(0);
+  });
+
+  test('Mixed line break styles generate appropriate warning', () => {
+    const testMessage = 'Hello\r\nWorld\nTest';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.warnings.length).toBe(1);
+    expect(segmentedMessage.warnings[0]).toContain('mixed');
+    expect(segmentedMessage.warnings[0]).toContain('LF and CRLF');
+  });
+
+  test('Message without line breaks generates no warning', () => {
+    const testMessage = 'Hello World';
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.warnings.length).toBe(0);
+  });
+});
+
+describe('CRLF Segment Calculation Tests', () => {
+  test('CRLF increases character count correctly', () => {
+    const testMessage = 'Hi\r\n'; // H, i, \r, \n = 4 chars
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.numberOfCharacters).toBe(4);
+  });
+
+  test('CRLF message correctly calculates 2 segments', () => {
+    // User's example: 162 chars with CRLF should be 2 segments
+    const testMessage = "Ce weekend c'est Big Kiff ! Découvrez vite 4 nouveaux menus à partager:\r\nl.dominos.fr/MqGKjT0Vi2\r\nConditions sur le site Domino's.\r\nSTOP : l.dominos.fr/oIv05Yymdm";
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.numberOfCharacters).toBe(162);
+    expect(segmentedMessage.segmentsCount).toBe(2);
+  });
+
+  test('Same message with LF uses fewer characters and segments', () => {
+    // Same message with LF should be 159 chars and 1 segment
+    const testMessage = "Ce weekend c'est Big Kiff ! Découvrez vite 4 nouveaux menus à partager:\nl.dominos.fr/MqGKjT0Vi2\nConditions sur le site Domino's.\nSTOP : l.dominos.fr/oIv05Yymdm";
+    const segmentedMessage = new SegmentedMessage(testMessage);
+    expect(segmentedMessage.numberOfCharacters).toBe(159);
+    expect(segmentedMessage.segmentsCount).toBe(1);
+  });
+});
