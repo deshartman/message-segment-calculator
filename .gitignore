@@ -36,3 +36,6 @@ typings/
 .env
 
 .DS_Store
+
+# Claude Code project instructions
+CLAUDE.md
