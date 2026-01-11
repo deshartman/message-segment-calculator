@@ -23,6 +23,10 @@
       <div id="message-box">
         <label class="label" for="message">SMS Message </label>
         <textarea class="" type="text" id="message" name="message"></textarea>
+        <div style="color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 8px; margin-top: 4px; border-radius: 4px; font-size: 0.85em;">
+          <strong>Note:</strong> Text pasted from Windows will be normalized to Unix-style line breaks (LF).
+          Enable "Windows Encoding" below to simulate CRLF and see the actual segment count for Windows messages.
+        </div>
       </div>
 
       <div id="information-box">
@@ -31,6 +35,13 @@
           <select class="not-really-value" id="smart-encoding">
             <option value="no">No</option>
             <option value="yes">Yes</option>
+          </select>
+        </div>
+        <span class="label">Windows Encoding?</span>
+        <div class="value">
+          <select class="not-really-value" id="windows-encoding">
+            <option value="no">No</option>
+            <option value="yes">Yes (simulate CRLF)</option>
           </select>
         </div>
         <span class="label">Encoding</span>
@@ -100,6 +111,7 @@
     const messageBox = document.getElementById('message');
     const encodingSelect = document.getElementById('encoding');
     const smartEncodingSelect = document.getElementById('smart-encoding');
+    const windowsEncodingSelect = document.getElementById('windows-encoding');
     const encodingUsed = document.getElementById('encoding-used');
 
     const messageViewerBox = document.getElementById('message-blocks');
@@ -118,9 +130,15 @@
     };
 
     function updateCalculator() {
-      const messageBodyText = messageBox.value;
+      let messageBodyText = messageBox.value;
       const encoding = encodingSelect.value;
       const smartEncoding = smartEncodingSelect.value === 'yes';
+      const windowsEncoding = windowsEncodingSelect.value === 'yes';
+
+      // If Windows Encoding is enabled, convert LF to CRLF to simulate Windows messages
+      if (windowsEncoding) {
+        messageBodyText = messageBodyText.replace(/\n/g, '\r\n');
+      }
 
       const segmentedMessage = new SegmentedMessage(messageBodyText, encoding, smartEncoding);
 
@@ -163,6 +181,7 @@
     messageBox.oninput = (event) => { updateCalculator(); };
     encodingSelect.onchange = (event) => { updateCalculator(); };
     smartEncodingSelect.onchange = (event) => { updateCalculator(); };
+    windowsEncodingSelect.onchange = (event) => { updateCalculator(); };
 
     messageViewerBox.onmouseout = clearSelection;
     segmentsViewerBox.onmouseout = clearSelection;
